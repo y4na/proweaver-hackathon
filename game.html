@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liway Adventures - Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @font-face {
+            font-family: 'CS Roger Inner';
+            src: url('assets/fonts/CS Roger Inner.otf') format('opentype');
+        }
+        @font-face {
+            font-family: 'HeyGotcha';
+            src: url('assets/fonts/HeyGotcha-Regular.ttf') format('truetype');
+        }
+        body {
+            /* Background is now handled by the canvas, so we just need a fallback color */
+            background-color: #000;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            font-family: 'HeyGotcha', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .btn-custom {
+            background-image: url('assets/images/ui/button_1.png');
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent;
+            border: none;
+            color: #fff;
+            padding: 1rem 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            margin: 0.5rem;
+            cursor: pointer;
+        }
+        .btn-custom:hover { transform: scale(1.05); filter: brightness(1.2); }
+
+        .pause-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="antialiased text-white">
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="pauseMenu" class="pause-menu">
+        <button class="btn-custom font-button" id="restartButton">Restart Game</button>
+        <button class="btn-custom font-button" onclick="window.location.href='index.html'">Main Menu</button>
+    </div>
+
+    <audio id="bgm" src="assets/audio/gamebgm.mp3" loop></audio>
+    <audio id="shootSound" src="assets/audio/shooting-sound.mp3"></audio>
+    <audio id="gameOverSound" src="assets/audio/game-over.mp3"></audio>
+
+    <script>
+        // --- GAME SETUP ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const pauseMenu = document.getElementById('pauseMenu');
+        const restartButton = document.getElementById('restartButton');
+
+        // Audio elements
+        const bgm = document.getElementById('bgm');
+        const shootSound = document.getElementById('shootSound');
+        const gameOverSound = document.getElementById('gameOverSound');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- ASSET LOADING ---
+        const playerImg = new Image();
+        playerImg.src = 'assets/images/player_bird.png';
+        const enemyImg = new Image();
+        enemyImg.src = 'assets/images/enemy_aswang.png';
+        const bulletImg = new Image();
+        bulletImg.src = 'assets/images/bullet_fireball.png';
+        const backgroundImg = new Image(); // NEW: Background image object
+        backgroundImg.src = 'assets/images/game_background_tiled.png';
+
+        // --- GAME VARIABLES ---
+        let score = 0;
+        let gameOver = false;
+        let isPaused = false;
+        let keys = {};
+        let gameSpeed = 1;
+
+        // NEW: Background scrolling variables
+        let bgY1 = 0;
+        let bgY2 = 0; // This will be set once the image loads
+        const bgSpeed = 3; // Base scrolling speed
+
+        const player = {
+            width: 150,
+            height: 125,
+            speed: 12,
+            shootingCooldown: 0,
+            x: 0,
+            y: 0,
+        };
+
+        let bullets = [];
+        let enemies = [];
+        let enemySpawnTimer = 80;
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape') togglePause();
+            else keys[e.code] = true;
+        });
+        document.addEventListener('keyup', (e) => keys[e.code] = false);
+        restartButton.addEventListener('click', () => {
+            togglePause();
+            restartGame();
+        });
+
+        // --- AUDIO FUNCTIONS ---
+        function playSound(audio) {
+            const isSfxMuted = localStorage.getItem('liway_sfx_muted') === 'true';
+            if (!isSfxMuted) {
+                audio.currentTime = 0;
+                audio.volume = 0.5;
+                audio.play().catch(() => {});
+            }
+        }
+
+        // --- GAME STATE FUNCTIONS ---
+        function togglePause() {
+            isPaused = !isPaused;
+            pauseMenu.style.display = isPaused ? 'flex' : 'none';
+            if (isPaused) bgm.pause();
+            else if (!bgm.muted) bgm.play();
+            
+            if (!isPaused) animate();
+        }
+
+        function restartGame() {
+            score = 0;
+            gameOver = false;
+            gameSpeed = 1;
+            enemies = [];
+            bullets = [];
+            player.x = canvas.width / 2 - player.width / 2;
+            player.y = canvas.height - player.height - 40;
+            enemySpawnTimer = 80;
+            
+            const isMusicMuted = localStorage.getItem('liway_music_muted') === 'true';
+            if (!isMusicMuted) {
+                bgm.currentTime = 0;
+                bgm.volume = 0.3;
+                bgm.play().catch(() => {});
+            }
+            
+            animate();
+        }
+
+        // --- GAME CLASSES & FUNCTIONS ---
+        class Bullet {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 55;   // Increased from 35 to 55
+                this.height = 55;  // Increased from 35 to 55
+                this.speed = 15;
+            }
+            update() { this.y -= this.speed; }
+            draw() { ctx.drawImage(bulletImg, this.x, this.y, this.width, this.height); }
+        }
+
+        class Enemy {
+            constructor(x, y, speed) {
+                this.x = x;
+                this.y = y;
+                this.width = 200;   // Increased from 140 to 200
+                this.height = 200;  // Increased from 115 to 170
+                this.speed = speed;
+            }
+            update() { this.y += this.speed * gameSpeed; }
+            draw() { ctx.drawImage(enemyImg, this.x, this.y, this.width, this.height); }
+        }
+
+        // NEW: Function to draw the seamless, scrolling background
+        function drawBackground() {
+            // Calculate the height of the background image scaled to the canvas width
+            const scaledHeight = canvas.width * (backgroundImg.height / backgroundImg.width);
+            
+            // Update y positions
+            bgY1 += bgSpeed * gameSpeed;
+            bgY2 += bgSpeed * gameSpeed;
+
+            // If the first image is completely off-screen, reset it above the second one
+            if (bgY1 >= scaledHeight) {
+                bgY1 = bgY2 - scaledHeight;
+            }
+            // If the second image is completely off-screen, reset it above the first one
+            if (bgY2 >= scaledHeight) {
+                bgY2 = bgY1 - scaledHeight;
+            }
+
+            ctx.drawImage(backgroundImg, 0, bgY1, canvas.width, scaledHeight);
+            ctx.drawImage(backgroundImg, 0, bgY2, canvas.width, scaledHeight);
+        }
+
+        function handlePlayerMovement() {
+            if ((keys['ArrowLeft'] || keys['KeyA']) && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if ((keys['ArrowRight'] || keys['KeyD']) && player.x < canvas.width - player.width) {
+                player.x += player.speed;
+            }
+        }
+
+        function handleShooting() {
+            if (keys['Space'] && player.shootingCooldown <= 0) {
+                bullets.push(new Bullet(player.x + player.width / 2 - 17.5, player.y));
+                player.shootingCooldown = Math.max(15 / gameSpeed, 8);
+                playSound(shootSound);
+            }
+            if (player.shootingCooldown > 0) {
+                player.shootingCooldown--;
+            }
+        }
+
+        function handleEnemies() {
+            enemySpawnTimer--;
+            if (enemySpawnTimer <= 0) {
+                const x = Math.random() * (canvas.width - 140);
+                const speed = (Math.random() * 2 + 1.5); // Base speed range
+                enemies.push(new Enemy(x, -140, speed));
+                enemySpawnTimer = Math.floor((Math.random() * 60 + 30) / gameSpeed);
+            }
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                enemies[i].update();
+                enemies[i].draw();
+                if (enemies[i].y > canvas.height) {
+                    enemies.splice(i, 1);
+                }
+            }
+        }
+
+        function handleGameProgression() {
+            // Increase speed smoothly: 1 + (score / 300)
+            gameSpeed = 1 + (score / 300);
+        }
+
+        function handleCollisions() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    if (bullets[i] && enemies[j] &&
+                        bullets[i].x < enemies[j].x + enemies[j].width &&
+                        bullets[i].x + bullets[i].width > enemies[j].x &&
+                        bullets[i].y < enemies[j].y + enemies[j].height &&
+                        bullets[i].y + bullets[i].height > enemies[j].y) {
+                        score += Math.floor(10 * gameSpeed);
+                        bullets.splice(i, 1);
+                        enemies.splice(j, 1);
+                        break;
+                    }
+                }
+            }
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                if (player.x < enemies[i].x + enemies[i].width &&
+                    player.x + player.width > enemies[i].x &&
+                    player.y < enemies[i].y + enemies[i].height &&
+                    player.y + player.height > enemies[i].y) {
+                    gameOver = true;
+                    bgm.pause();
+                    playSound(gameOverSound);
+                }
+            }
+        }
+
+        function drawUI() {
+            ctx.fillStyle = 'white';
+            ctx.font = "32px 'HeyGotcha'";
+            ctx.textAlign = 'left';
+            ctx.fillText('Score: ' + score, 20, 45);
+            ctx.fillText('Speed: ' + gameSpeed.toFixed(1) + 'x', 20, 85);
+
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(0, canvas.height / 2 - 80, canvas.width, 160);
+                ctx.fillStyle = '#ff4d4d';
+                ctx.font = "70px 'CS Roger Inner'";
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+                ctx.fillStyle = 'white';
+                ctx.font = "28px 'HeyGotcha'";
+                ctx.fillText('Final Score: ' + score, canvas.width / 2, canvas.height / 2 + 50);
+                ctx.fillText('Press ESC for menu', canvas.width / 2, canvas.height / 2 + 90);
+            }
+        }
+
+        // --- MAIN GAME LOOP ---
+        function animate() {
+            if (isPaused || gameOver) {
+                if (gameOver) drawUI();
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background and overlay first
+            drawBackground();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; // The dark overlay
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw game elements
+            ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].update();
+                bullets[i].draw();
+                if (bullets[i].y < -40) bullets.splice(i, 1);
+            }
+
+            // Handle Game Logic
+            handlePlayerMovement();
+            handleShooting();
+            handleEnemies();
+            handleGameProgression();
+            handleCollisions();
+            drawUI();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Ensure all images are loaded before starting
+        let assetsLoaded = 0;
+        const totalAssets = 4; // Updated to include the background image
+        const onAssetLoad = () => {
+            assetsLoaded++;
+            if (assetsLoaded === totalAssets) {
+                // Set initial background positions after image has loaded
+                const scaledHeight = canvas.width * (backgroundImg.height / backgroundImg.width);
+                bgY1 = 0;
+                bgY2 = -scaledHeight;
+                restartGame();
+            }
+        };
+        playerImg.onload = onAssetLoad;
+        enemyImg.onload = onAssetLoad;
+        bulletImg.onload = onAssetLoad;
+        backgroundImg.onload = onAssetLoad;
+
+    </script>
+</body>
+</html>
