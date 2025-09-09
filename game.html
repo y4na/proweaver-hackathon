@@ -15,10 +15,9 @@
             src: url('assets/fonts/HeyGotcha-Regular.ttf') format('truetype');
         }
         body {
-            /* Background is now handled by the canvas, so we just need a fallback color */
             background-color: #000;
             margin: 0;
-            overflow: hidden; /* Prevent scrollbars */
+            overflow: hidden;
             font-family: 'HeyGotcha', sans-serif;
         }
 
@@ -98,11 +97,27 @@
         // --- ASSET LOADING ---
         const playerImg = new Image();
         playerImg.src = 'assets/images/player_bird.png';
-        const enemyImg = new Image();
-        enemyImg.src = 'assets/images/enemy_aswang.png';
-        const bulletImg = new Image();
-        bulletImg.src = 'assets/images/bullet_fireball.png';
-        const backgroundImg = new Image(); // NEW: Background image object
+        const playerRageImg = new Image();
+        playerRageImg.src = 'assets/images/player_birdrage.png';
+        
+        const enemyAswangImg = new Image();
+        enemyAswangImg.src = 'assets/images/enemy_aswang.png';
+        const enemyTikbalangImg = new Image();
+        enemyTikbalangImg.src = 'assets/images/enemy_tikbalang.png';
+        
+        const bulletNormalImg = new Image();
+        bulletNormalImg.src = 'assets/images/bullet_fireball.png';
+        const bulletBlueImg = new Image();
+        bulletBlueImg.src = 'assets/images/bullet_bluefire.png';
+        const bulletRedImg = new Image();
+        bulletRedImg.src = 'assets/images/bullet_redfire.png';
+        
+        const powerupIceImg = new Image();
+        powerupIceImg.src = 'assets/images/powerup_ice.png';
+        const powerupFireImg = new Image();
+        powerupFireImg.src = 'assets/images/powerup_fire.png';
+        
+        const backgroundImg = new Image();
         backgroundImg.src = 'assets/images/game_background_tiled.png';
 
         // --- GAME VARIABLES ---
@@ -112,10 +127,20 @@
         let keys = {};
         let gameSpeed = 1;
 
-        // NEW: Background scrolling variables
+        // Background scrolling variables
         let bgY1 = 0;
-        let bgY2 = 0; // This will be set once the image loads
-        const bgSpeed = 3; // Base scrolling speed
+        let bgY2 = 0;
+        const bgSpeed = 3;
+
+        // Power-up system
+        let activePowerup = null; // 'ice', 'fire', or null
+        let powerupTimeLeft = 0;
+        const POWERUP_DURATION = 600; // 10 seconds at 60fps
+
+        // Boss system
+        let bossActive = false;
+        let bossSpawnThreshold = 500; // Score needed to spawn first boss
+        let nextBossThreshold = 500;
 
         const player = {
             width: 150,
@@ -128,7 +153,9 @@
 
         let bullets = [];
         let enemies = [];
+        let powerups = [];
         let enemySpawnTimer = 80;
+        let powerupSpawnTimer = 90; // 1.5 seconds initial spawn (was 300)
 
         // --- EVENT LISTENERS ---
         document.addEventListener('keydown', (e) => {
@@ -151,6 +178,15 @@
             }
         }
 
+        function startBackgroundMusic() {
+            const isMusicMuted = localStorage.getItem('liway_music_muted') === 'true';
+            if (!isMusicMuted) {
+                bgm.currentTime = 0;
+                bgm.volume = 0.3;
+                bgm.play().catch(() => {});
+            }
+        }
+
         // --- GAME STATE FUNCTIONS ---
         function togglePause() {
             isPaused = !isPaused;
@@ -162,64 +198,192 @@
         }
 
         function restartGame() {
+            // Reset all game variables to initial state
             score = 0;
             gameOver = false;
-            gameSpeed = 1;
+            gameSpeed = 1; // Reset to initial speed
             enemies = [];
             bullets = [];
+            powerups = [];
+            activePowerup = null;
+            powerupTimeLeft = 0;
+            bossActive = false;
+            bossSpawnThreshold = 500;
+            nextBossThreshold = 500;
+            
+            // Reset player position
             player.x = canvas.width / 2 - player.width / 2;
             player.y = canvas.height - player.height - 40;
-            enemySpawnTimer = 80;
+            player.shootingCooldown = 0;
             
-            const isMusicMuted = localStorage.getItem('liway_music_muted') === 'true';
-            if (!isMusicMuted) {
-                bgm.currentTime = 0;
-                bgm.volume = 0.3;
-                bgm.play().catch(() => {});
-            }
+            // Reset spawn timers to initial values
+            enemySpawnTimer = 80;
+            powerupSpawnTimer = 90;
+            
+            // Reset background position
+            const scaledHeight = canvas.width * (backgroundImg.height / backgroundImg.width);
+            bgY1 = 0;
+            bgY2 = -scaledHeight;
+            
+            // Start background music only when restarting
+            startBackgroundMusic();
             
             animate();
         }
 
         // --- GAME CLASSES & FUNCTIONS ---
         class Bullet {
-            constructor(x, y) {
+            constructor(x, y, type = 'normal') {
                 this.x = x;
                 this.y = y;
-                this.width = 55;   // Increased from 35 to 55
-                this.height = 55;  // Increased from 35 to 55
+                this.width = 55;
+                this.height = 55;
                 this.speed = 15;
+                this.type = type; // 'normal', 'ice', 'fire'
+                this.damage = type === 'fire' ? 2 : 1;
             }
             update() { this.y -= this.speed; }
-            draw() { ctx.drawImage(bulletImg, this.x, this.y, this.width, this.height); }
+            draw() { 
+                let img = bulletNormalImg;
+                if (this.type === 'ice') img = bulletBlueImg;
+                else if (this.type === 'fire') img = bulletRedImg;
+                ctx.drawImage(img, this.x, this.y, this.width, this.height); 
+            }
         }
 
         class Enemy {
-            constructor(x, y, speed) {
+            constructor(x, y, speed, type = 'aswang') {
                 this.x = x;
                 this.y = y;
-                this.width = 200;   // Increased from 140 to 200
-                this.height = 200;  // Increased from 115 to 170
+                this.type = type;
                 this.speed = speed;
+                this.isFrozen = false;
+                this.frozenTimer = 0;
+                
+                if (type === 'tikbalang') {
+                    // Much bigger boss
+                    this.width = 400;
+                    this.height = 400;
+                    this.maxHealth = 15; // Much more health
+                    this.health = this.maxHealth;
+                } else {
+                    this.width = 200;
+                    this.height = 200;
+                    this.maxHealth = 1;
+                    this.health = this.maxHealth;
+                }
             }
-            update() { this.y += this.speed * gameSpeed; }
-            draw() { ctx.drawImage(enemyImg, this.x, this.y, this.width, this.height); }
+            
+            update() { 
+                if (this.isFrozen) {
+                    this.y += (this.speed * 0.3) * gameSpeed; // Slow when frozen
+                    this.frozenTimer--;
+                    if (this.frozenTimer <= 0) {
+                        this.isFrozen = false;
+                    }
+                } else {
+                    this.y += this.speed * gameSpeed;
+                }
+            }
+            
+            draw() { 
+                let img = this.type === 'tikbalang' ? enemyTikbalangImg : enemyAswangImg;
+                
+                // Apply blue tint if frozen
+                if (this.isFrozen) {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'multiply';
+                    ctx.fillStyle = '#87CEEB'; // Light blue tint
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.drawImage(img, this.x, this.y, this.width, this.height);
+                    ctx.restore();
+                } else {
+                    ctx.drawImage(img, this.x, this.y, this.width, this.height);
+                }
+                
+                // Draw health bar for tikbalang (boss)
+                if (this.type === 'tikbalang') {
+                    const barWidth = this.width * 0.8;
+                    const barHeight = 12;
+                    const barX = this.x + (this.width - barWidth) / 2;
+                    const barY = this.y - 20;
+                    
+                    // Background
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    ctx.fillRect(barX - 2, barY - 2, barWidth + 4, barHeight + 4);
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                    ctx.fillRect(barX, barY, barWidth, barHeight);
+                    
+                    // Health
+                    ctx.fillStyle = 'rgba(0, 255, 0, 0.9)';
+                    ctx.fillRect(barX, barY, (barWidth * this.health) / this.maxHealth, barHeight);
+                    
+                    // Boss label
+                    ctx.fillStyle = 'yellow';
+                    ctx.font = "24px 'HeyGotcha'";
+                    ctx.textAlign = 'center';
+                    ctx.fillText('TIKBALANG BOSS', this.x + this.width / 2, barY - 5);
+                }
+            }
+            
+            freeze() {
+                this.isFrozen = true;
+                this.frozenTimer = 180; // 3 seconds at 60fps
+            }
+            
+            takeDamage(damage) {
+                this.health -= damage;
+                return this.health <= 0;
+            }
+        }
+
+        class Powerup {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // 'ice' or 'fire'
+                this.width = 60;
+                this.height = 60;
+                this.speed = 2;
+                this.pulse = 0;
+            }
+            
+            update() { 
+                this.y += this.speed;
+                this.pulse += 0.1;
+            }
+            
+            draw() {
+                // Pulsing effect
+                const scale = 1 + Math.sin(this.pulse) * 0.1;
+                const drawWidth = this.width * scale;
+                const drawHeight = this.height * scale;
+                const drawX = this.x - (drawWidth - this.width) / 2;
+                const drawY = this.y - (drawHeight - this.height) / 2;
+                
+                let img = this.type === 'ice' ? powerupIceImg : powerupFireImg;
+                ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                
+                // Glow effect
+                ctx.save();
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.type === 'ice' ? '#00BFFF' : '#FF4500';
+                ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                ctx.restore();
+            }
         }
 
         // NEW: Function to draw the seamless, scrolling background
         function drawBackground() {
-            // Calculate the height of the background image scaled to the canvas width
             const scaledHeight = canvas.width * (backgroundImg.height / backgroundImg.width);
             
-            // Update y positions
             bgY1 += bgSpeed * gameSpeed;
             bgY2 += bgSpeed * gameSpeed;
 
-            // If the first image is completely off-screen, reset it above the second one
             if (bgY1 >= scaledHeight) {
                 bgY1 = bgY2 - scaledHeight;
             }
-            // If the second image is completely off-screen, reset it above the first one
             if (bgY2 >= scaledHeight) {
                 bgY2 = bgY1 - scaledHeight;
             }
@@ -239,7 +403,11 @@
 
         function handleShooting() {
             if (keys['Space'] && player.shootingCooldown <= 0) {
-                bullets.push(new Bullet(player.x + player.width / 2 - 17.5, player.y));
+                let bulletType = 'normal';
+                if (activePowerup === 'ice') bulletType = 'ice';
+                else if (activePowerup === 'fire') bulletType = 'fire';
+                
+                bullets.push(new Bullet(player.x + player.width / 2 - 27.5, player.y, bulletType));
                 player.shootingCooldown = Math.max(15 / gameSpeed, 8);
                 playSound(shootSound);
             }
@@ -251,27 +419,93 @@
         function handleEnemies() {
             enemySpawnTimer--;
             if (enemySpawnTimer <= 0) {
-                const x = Math.random() * (canvas.width - 140);
-                const speed = (Math.random() * 2 + 1.5); // Base speed range
-                enemies.push(new Enemy(x, -140, speed));
-                enemySpawnTimer = Math.floor((Math.random() * 60 + 30) / gameSpeed);
+                // Check if we should spawn a boss
+                if (score >= nextBossThreshold && !bossActive) {
+                    // Spawn Tikbalang boss
+                    const x = Math.random() * (canvas.width - 400); // Account for boss size
+                    const speed = Math.random() * 1 + 1; // Slower boss speed
+                    enemies.push(new Enemy(x, -400, speed, 'tikbalang'));
+                    bossActive = true;
+                    nextBossThreshold += 1000; // Next boss at +1000 more score
+                    enemySpawnTimer = 300; // Longer delay after boss spawn
+                } else {
+                    // Normal enemy spawn - reduce frequency when boss is active
+                    const spawnChance = bossActive ? 0.3 : 1.0; // 30% chance when boss is active
+                    if (Math.random() < spawnChance) {
+                        const x = Math.random() * (canvas.width - 200);
+                        const speed = Math.random() * 2 + 1.5;
+                        enemies.push(new Enemy(x, -200, speed, 'aswang'));
+                    }
+                    enemySpawnTimer = Math.floor((Math.random() * 60 + 30) / gameSpeed);
+                }
             }
 
+            // Update and check if boss is still alive
+            bossActive = false;
             for (let i = enemies.length - 1; i >= 0; i--) {
                 enemies[i].update();
                 enemies[i].draw();
+                
+                if (enemies[i].type === 'tikbalang') {
+                    bossActive = true;
+                }
+                
                 if (enemies[i].y > canvas.height) {
                     enemies.splice(i, 1);
                 }
             }
         }
 
+        function handlePowerups() {
+            // Spawn powerups
+            powerupSpawnTimer--;
+            if (powerupSpawnTimer <= 0) {
+                const x = Math.random() * (canvas.width - 60);
+                const type = Math.random() < 0.5 ? 'ice' : 'fire';
+                powerups.push(new Powerup(x, -60, type));
+                powerupSpawnTimer = Math.random() * 180 + 90; // 1.5-4.5 seconds between spawns (was 5-15s)
+            }
+
+            // Update powerups
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                powerups[i].update();
+                powerups[i].draw();
+                
+                // Check collision with player
+                if (powerups[i].x < player.x + player.width &&
+                    powerups[i].x + powerups[i].width > player.x &&
+                    powerups[i].y < player.y + player.height &&
+                    powerups[i].y + powerups[i].height > player.y) {
+                    
+                    activePowerup = powerups[i].type;
+                    powerupTimeLeft = POWERUP_DURATION;
+                    powerups.splice(i, 1);
+                    continue;
+                }
+                
+                // Remove if off screen
+                if (powerups[i].y > canvas.height) {
+                    powerups.splice(i, 1);
+                }
+            }
+
+            // Handle active powerup timer
+            if (activePowerup && powerupTimeLeft > 0) {
+                powerupTimeLeft--;
+                if (powerupTimeLeft <= 0) {
+                    activePowerup = null;
+                }
+            }
+        }
+
         function handleGameProgression() {
-            // Increase speed smoothly: 1 + (score / 300)
-            gameSpeed = 1 + (score / 300);
+            // Slower progression to prevent game from getting too fast
+            gameSpeed = 1 + (score / 500);
+            if (gameSpeed > 3) gameSpeed = 3; // Cap maximum speed
         }
 
         function handleCollisions() {
+            // Bullets vs Enemies
             for (let i = bullets.length - 1; i >= 0; i--) {
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     if (bullets[i] && enemies[j] &&
@@ -279,13 +513,28 @@
                         bullets[i].x + bullets[i].width > enemies[j].x &&
                         bullets[i].y < enemies[j].y + enemies[j].height &&
                         bullets[i].y + bullets[i].height > enemies[j].y) {
-                        score += Math.floor(10 * gameSpeed);
+                        
+                        // Apply bullet effects
+                        if (bullets[i].type === 'ice') {
+                            enemies[j].freeze();
+                        }
+                        
+                        // Deal damage
+                        const destroyed = enemies[j].takeDamage(bullets[i].damage);
+                        
+                        if (destroyed) {
+                            const baseScore = enemies[j].type === 'tikbalang' ? 100 : 10; // More score for boss
+                            score += Math.floor(baseScore * gameSpeed);
+                            enemies.splice(j, 1);
+                        }
+                        
                         bullets.splice(i, 1);
-                        enemies.splice(j, 1);
                         break;
                     }
                 }
             }
+            
+            // Player vs Enemies
             for (let i = enemies.length - 1; i >= 0; i--) {
                 if (player.x < enemies[i].x + enemies[i].width &&
                     player.x + player.width > enemies[i].x &&
@@ -304,6 +553,33 @@
             ctx.textAlign = 'left';
             ctx.fillText('Score: ' + score, 20, 45);
             ctx.fillText('Speed: ' + gameSpeed.toFixed(1) + 'x', 20, 85);
+            
+            // Show next boss threshold
+            if (score < nextBossThreshold) {
+                ctx.fillStyle = 'yellow';
+                ctx.fillText(`Next Boss: ${nextBossThreshold - score}`, 20, 125);
+            }
+            
+            // Draw active powerup indicator
+            if (activePowerup && powerupTimeLeft > 0) {
+                const timeLeft = (powerupTimeLeft / 60).toFixed(1);
+                const powerupText = activePowerup === 'ice' ? 'ICE POWER' : 'FIRE POWER';
+                const color = activePowerup === 'ice' ? '#00BFFF' : '#FF4500';
+                
+                ctx.fillStyle = color;
+                const yPos = score < nextBossThreshold ? 165 : 125;
+                ctx.fillText(`${powerupText}: ${timeLeft}s`, 20, yPos);
+                
+                // Draw powerup bar
+                const barWidth = 200;
+                const barHeight = 10;
+                const barProgress = powerupTimeLeft / POWERUP_DURATION;
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(20, yPos + 10, barWidth, barHeight);
+                ctx.fillStyle = color;
+                ctx.fillRect(20, yPos + 10, barWidth * barProgress, barHeight);
+            }
 
             if (gameOver) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
@@ -328,24 +604,27 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw background and overlay first
+            // Draw background and overlay
             drawBackground();
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)'; // The dark overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw game elements
-            ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+            // Draw player (change sprite based on fire powerup)
+            const currentPlayerImg = (activePowerup === 'fire') ? playerRageImg : playerImg;
+            ctx.drawImage(currentPlayerImg, player.x, player.y, player.width, player.height);
 
+            // Update and draw bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 bullets[i].update();
                 bullets[i].draw();
                 if (bullets[i].y < -40) bullets.splice(i, 1);
             }
 
-            // Handle Game Logic
+            // Handle game logic
             handlePlayerMovement();
             handleShooting();
             handleEnemies();
+            handlePowerups();
             handleGameProgression();
             handleCollisions();
             drawUI();
@@ -355,20 +634,35 @@
 
         // Ensure all images are loaded before starting
         let assetsLoaded = 0;
-        const totalAssets = 4; // Updated to include the background image
+        const totalAssets = 10; // Updated count
         const onAssetLoad = () => {
             assetsLoaded++;
             if (assetsLoaded === totalAssets) {
-                // Set initial background positions after image has loaded
+                // Initialize player position
+                player.x = canvas.width / 2 - player.width / 2;
+                player.y = canvas.height - player.height - 40;
+                
+                // Initialize background
                 const scaledHeight = canvas.width * (backgroundImg.height / backgroundImg.width);
                 bgY1 = 0;
                 bgY2 = -scaledHeight;
-                restartGame();
+                
+                // Start music automatically
+                startBackgroundMusic();
+
+                animate();
             }
         };
+        
         playerImg.onload = onAssetLoad;
-        enemyImg.onload = onAssetLoad;
-        bulletImg.onload = onAssetLoad;
+        playerRageImg.onload = onAssetLoad;
+        enemyAswangImg.onload = onAssetLoad;
+        enemyTikbalangImg.onload = onAssetLoad;
+        bulletNormalImg.onload = onAssetLoad;
+        bulletBlueImg.onload = onAssetLoad;
+        bulletRedImg.onload = onAssetLoad;
+        powerupIceImg.onload = onAssetLoad;
+        powerupFireImg.onload = onAssetLoad;
         backgroundImg.onload = onAssetLoad;
 
     </script>
