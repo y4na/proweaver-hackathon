@@ -15,13 +15,20 @@
       src: url('assets/fonts/HeyGotcha-Regular.ttf') format('truetype');
     }
 
-    body {
-      background-color: #1a202c;
-      background-image: url('assets/images/mainmenu_bg.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
+body {
+  background-color: #1a202c;
+  background-image: url('assets/images/mainmenu_bg.png');
+  cursor: url('assets/images/ui/cursor.png') 0 0, auto; /* default cursor */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Apply pointer cursor on clickable things */
+button, a, .btn-custom {
+  cursor: url('assets/images/ui/cursorpointer.png') 0 0, pointer;
+}
+
 
     .overlay { background-color: rgba(0, 0, 0, 0.6); }
 
