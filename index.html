@@ -1,144 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Liway Adventures</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @font-face {
-      font-family: 'CS Roger Inner';
-      src: url('assets/fonts/CS Roger Inner.otf') format('opentype');
-    }
-
-    @font-face {
-      font-family: 'HeyGotcha';
-      src: url('assets/fonts/HeyGotcha-Regular.ttf') format('truetype');
-    }
-
-    body {
-      background-color: #1a202c;
-      background-image: url('assets/images/mainmenu_bg.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-
-    .overlay {
-      background-color: rgba(0, 0, 0, 0.5);
-    }
-
-    .font-gametitle {
-      font-family: 'CS Roger Inner', sans-serif;
-      line-height: 0.9;
-      position: relative;
-      display: inline-block;
-    }
-
-    .font-button {
-      font-family: 'HeyGotcha', sans-serif;
-    }
-
-    .btn-custom {
-      background-image: url('assets/images/ui/button_1.png');
-      background-size: 100% 100%;
-      background-repeat: no-repeat;
-      background-position: center;
-      background-color: transparent;
-      border: none;
-      color: #fff;
-      padding: 1.5rem 2.5rem;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      font-size: 2rem;
-      font-weight: bold;
-      transition: all 0.3s ease;
-      text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
-    }
-
-    .btn-custom:hover {
-      transform: scale(1.1);
-      filter: brightness(1.2);
-    }
-
-    .btn-custom:active {
-      transform: scale(1.00);
-      filter: brightness(0.9);
-    }
-
-    /* Glow effect */
-    .glow-text {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      color: #ffe066;
-      z-index: 0;
-      text-shadow:
-        0 0 10px #ffd700,
-        0 0 20px #ffd700,
-        0 0 40px #ffdd55,
-        0 0 60px #ffaa00;
-      animation: glow-pulse 2s infinite alternate;
-    }
-
-    .front-text {
-      position: relative;
-      z-index: 1;
-      color: #fff6d6; /* readable foreground */
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
-    }
-
-    @keyframes glow-pulse {
-      from {
-        text-shadow:
-          0 0 10px #ffd700,
-          0 0 20px #ffd700,
-          0 0 40px #ffdd55,
-          0 0 60px #ffaa00;
-      }
-      to {
-        text-shadow:
-          0 0 20px #fff6a0,
-          0 0 40px #ffd700,
-          0 0 60px #ffdd55,
-          0 0 80px #ffaa00;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filipino Mythology Shooter - Menu</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="antialiased text-white">
-
-  <div class="overlay min-h-screen flex flex-col items-center justify-center p-4">
-    <!-- Game Title -->
-    <div class="text-center mb-20 relative">
-      <h1 class="font-gametitle font-bold">
-        <!-- Glow background -->
-        <div class="glow-text">
-          <span class="block text-9xl md:text-[10rem] mb-6">Liway</span>
-          <span class="block text-2xl md:text-3xl">Adventures</span>
+<body>
+    <div id="menu-container">
+        <img id="menu-background" src="/assets/menu_background.png" alt="Filipino Mythology Landscape">
+        <div id="menu-content">
+            <h1>Lumipad: Ang Tagapagtanggol ng Lupa</h1>
+            <p>A Filipino Mythology Inspired Shooter</p>
+            <button id="start-game-button">Start Game</button>
         </div>
-        <!-- Foreground readable text -->
-        <div class="front-text">
-          <span class="block text-9xl md:text-[10rem] mb-6">Liway</span>
-          <span class="block text-2xl md:text-3xl">Adventures</span>
-        </div>
-      </h1>
     </div>
-
-    <!-- Menu Buttons -->
-    <div class="flex flex-col space-y-8 w-full max-w-md">
-      <button class="btn-custom font-button" onclick="window.location.href='game.html'">
-        Start Game
-      </button>
-      <button class="btn-custom font-button" onclick="window.location.href='help.html'">
-        Tutorial
-      </button>
-      <button class="btn-custom font-button" onclick="window.location.href='settings.html'">
-        Settings
-      </button>
-    </div>
-  </div>
-
+    <script src="menu.js"></script>
 </body>
 </html>
