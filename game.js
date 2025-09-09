@@ -7,59 +7,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let gameRunning = true;
     let scrollSpeed = 2; // Speed of background scrolling
+    let score = 0; // ✅ Score variable
 
     // Load the background image
     const backgroundImage = new Image();
-    // This image needs to be tiled
     backgroundImage.src = "assets/game_background_tiled.png"; 
 
     let backgroundY1 = 0;
-    let backgroundY2 = -canvas.height; // Start the second image above the canvas
+    let backgroundY2 = -canvas.height;
 
     backgroundImage.onload = () => {
-        // Player (Inspired by a mythological bird like Sarimanok or a spirit)
         const playerImage = new Image();
-        playerImage.src = "assets/player_bird.png"; // You'll need to create this image
+        playerImage.src = "assets/player_bird.png"; 
         let player = {
-            x: canvas.width / 2 - 48, // Assuming player is 64x64
+            x: canvas.width / 2 - 48,
             y: canvas.height - 140,
             width: 140,
             height: 100,
             speed: 5
         };
 
-        // Player movement
         let keys = {};
-        document.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
-        });
-        document.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
-        });
+        document.addEventListener('keydown', (e) => { keys[e.key] = true; });
+        document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
         function updatePlayer() {
-            if (keys['ArrowLeft'] && player.x > 0) {
-                player.x -= player.speed;
-            }
-            if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
-                player.x += player.speed;
-            }
-            if (keys['ArrowUp'] && player.y > 0) {
-                player.y -= player.speed;
-            }
-            if (keys['ArrowDown'] && player.y < canvas.height - player.height) {
-                player.y += player.speed;
-            }
+            if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
+            if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += player.speed;
+            if (keys['ArrowUp'] && player.y > 0) player.y -= player.speed;
+            if (keys['ArrowDown'] && player.y < canvas.height - player.height) player.y += player.speed;
         }
 
-        // Bullets (e.g., enchanted arrows, fireballs from a diwata)
+        // Bullets
         let bullets = [];
         const bulletImage = new Image();
-        bulletImage.src = "assets/bullet_fireball.png"; // You'll need to create this image
+        bulletImage.src = "assets/bullet_fireball.png"; 
 
         function shoot() {
             bullets.push({
-                x: player.x + player.width / 2 - 18, // Center bullet
+                x: player.x + player.width / 2 - 18,
                 y: player.y,
                 width: 64,
                 height: 64,
@@ -68,10 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let lastShotTime = 0;
-        const shotDelay = 200; // milliseconds between shots
+        const shotDelay = 200;
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === ' ' && (Date.now() - lastShotTime > shotDelay)) { // Spacebar to shoot
+            if (e.key === ' ' && (Date.now() - lastShotTime > shotDelay)) {
                 shoot();
                 lastShotTime = Date.now();
             }
@@ -87,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Enemies (e.g., Aswang, Kapre, Tikbalang, distorted spirits)
+        // Enemies
         let enemies = [];
         const enemyImage = new Image();
         enemyImage.src = "assets/enemy_aswang.png"; 
@@ -95,15 +81,15 @@ document.addEventListener('DOMContentLoaded', () => {
         function spawnEnemy() {
             enemies.push({
                 x: Math.random() * (canvas.width - 64),
-                y: -100, // Start above canvas
+                y: -100,
                 width: 100,
                 height: 100,
-                speed: 1 + Math.random() * 2 // Random speed
+                speed: 1 + Math.random() * 2
             });
         }
 
         let lastEnemySpawnTime = 0;
-        const enemySpawnDelay = 1500; // milliseconds between enemy spawns
+        const enemySpawnDelay = 1500;
 
         function updateEnemies() {
             if (Date.now() - lastEnemySpawnTime > enemySpawnDelay) {
@@ -121,37 +107,51 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Collision detection
+        // Collision detection
         function checkCollisions() {
+            // Helper: scaled collision check
+            function checkCollisionScaled(p, e, scale = 0.8) {
+                let pWidth = p.width * scale;
+                let pHeight = p.height * scale;
+                let eWidth = e.width * scale;
+                let eHeight = e.height * scale;
+
+                let pX = p.x + (p.width - pWidth) / 2;
+                let pY = p.y + (p.height - pHeight) / 2;
+                let eX = e.x + (e.width - eWidth) / 2;
+                let eY = e.y + (e.height - eHeight) / 2;
+
+                return !(pX + pWidth < eX || 
+                        pX > eX + eWidth || 
+                        pY + pHeight < eY || 
+                        pY > eY + eHeight);
+            }
+
+            // 🔹 Bullet-enemy collisions
             for (let i = 0; i < bullets.length; i++) {
                 for (let j = 0; j < enemies.length; j++) {
-                    // Simple AABB collision
-                    if (bullets[i].x < enemies[j].x + enemies[j].width &&
-                        bullets[i].x + bullets[i].width > enemies[j].x &&
-                        bullets[i].y < enemies[j].y + enemies[j].height &&
-                        bullets[i].y + bullets[i].height > enemies[j].y) {
-                        
-                        // Collision detected! Remove bullet and enemy
+                    if (checkCollisionScaled(bullets[i], enemies[j], 0.9)) { 
+                        // ✅ Increase score
+                        score += 10;
+
                         bullets.splice(i, 1);
                         enemies.splice(j, 1);
-                        i--; // Adjust index after removing bullet
-                        j--; // Adjust index after removing enemy
-                        // Add score, sound, effects here
-                        break; // No need to check this bullet against other enemies
+                        i--; 
+                        j--; 
+                        break;
                     }
                 }
             }
 
-            // Player-enemy collision (for losing condition)
+            // 🔹 Player-enemy collisions
             for (let i = 0; i < enemies.length; i++) {
-                if (player.x < enemies[i].x + enemies[i].width &&
-                    player.x + player.width > enemies[i].x &&
-                    player.y < enemies[i].y + enemies[i].height &&
-                    player.y + player.height > enemies[i].y) {
-                    
-                    // Game Over!
-                    console.log("Game Over!");
+                if (checkCollisionScaled(player, enemies[i], 0.8)) { // Player hitbox is slightly smaller
                     gameRunning = false;
-                    // Implement a game over screen or reset
+
+                    // ✅ Show modal with score
+                    document.getElementById("gameOverModal").style.display = "block";
+                    document.getElementById("finalScore").textContent = "Your Score: " + score;
+                    document.getElementById("gameOverModal").style.display = "block";
                 }
             }
         }
@@ -160,32 +160,29 @@ document.addEventListener('DOMContentLoaded', () => {
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw scrolling background
             ctx.drawImage(backgroundImage, 0, backgroundY1, canvas.width, canvas.height);
             ctx.drawImage(backgroundImage, 0, backgroundY2, canvas.width, canvas.height);
 
             backgroundY1 += scrollSpeed;
             backgroundY2 += scrollSpeed;
 
-            if (backgroundY1 > canvas.height) {
-                backgroundY1 = -canvas.height + (backgroundY1 - canvas.height);
-            }
-            if (backgroundY2 > canvas.height) {
-                backgroundY2 = -canvas.height + (backgroundY2 - canvas.height);
-            }
+            if (backgroundY1 > canvas.height) backgroundY1 = -canvas.height + (backgroundY1 - canvas.height);
+            if (backgroundY2 > canvas.height) backgroundY2 = -canvas.height + (backgroundY2 - canvas.height);
 
-            // Draw player
-            ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
+            ctx.drawImage(playerImage, player.x, player.y + 25, player.width, player.height);
 
-            // Draw bullets
-            bullets.forEach(bullet => {
+            bullets.forEach(bullet => { 
                 ctx.drawImage(bulletImage, bullet.x, bullet.y, bullet.width, bullet.height);
             });
 
-            // Draw enemies
             enemies.forEach(enemy => {
                 ctx.drawImage(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
             });
+
+            // ✅ Draw score on screen
+            ctx.fillStyle = "white";
+            ctx.font = "24px Arial";
+            ctx.fillText("Score: " + score, 20, 40);
         }
 
         function gameLoop() {
@@ -201,5 +198,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         gameLoop();
+
+        // ✅ Restart function (called by button in modal)
+        window.restartGame = function() {
+            score = 0;
+            bullets = [];
+            enemies = [];
+            gameRunning = true;
+            document.getElementById("gameOverModal").style.display = "none";
+            gameLoop();
+        };
     };
 });
