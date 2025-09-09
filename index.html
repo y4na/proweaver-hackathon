@@ -10,7 +10,6 @@
       font-family: 'CS Roger Inner';
       src: url('assets/fonts/CS Roger Inner.otf') format('opentype');
     }
-
     @font-face {
       font-family: 'HeyGotcha';
       src: url('assets/fonts/HeyGotcha-Regular.ttf') format('truetype');
@@ -24,20 +23,10 @@
       background-repeat: no-repeat;
     }
 
-    .overlay {
-      background-color: rgba(0, 0, 0, 0.5);
-    }
+    .overlay { background-color: rgba(0, 0, 0, 0.6); }
 
-    .font-gametitle {
-      font-family: 'CS Roger Inner', sans-serif;
-      line-height: 0.9;
-      position: relative;
-      display: inline-block;
-    }
-
-    .font-button {
-      font-family: 'HeyGotcha', sans-serif;
-    }
+    .font-gametitle { font-family: 'CS Roger Inner', sans-serif; line-height: 0.9; }
+    .font-button { font-family: 'HeyGotcha', sans-serif; }
 
     .btn-custom {
       background-image: url('assets/images/ui/button_1.png');
@@ -55,90 +44,208 @@
       transition: all 0.3s ease;
       text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
     }
+    .btn-custom:hover { transform: scale(1.1); filter: brightness(1.2); }
+    .btn-custom:active { transform: scale(1.0); filter: brightness(0.9); }
 
-    .btn-custom:hover {
-      transform: scale(1.1);
-      filter: brightness(1.2);
-    }
-
-    .btn-custom:active {
-      transform: scale(1.00);
-      filter: brightness(0.9);
-    }
-
-    /* Glow effect */
     .glow-text {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      color: #ffe066;
-      z-index: 0;
-      text-shadow:
-        0 0 10px #ffd700,
-        0 0 20px #ffd700,
-        0 0 40px #ffdd55,
-        0 0 60px #ffaa00;
+      position: absolute; top: 0; left: 0; width: 100%; color: #ffe066; z-index: 0;
+      text-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 40px #ffdd55, 0 0 60px #ffaa00;
       animation: glow-pulse 2s infinite alternate;
     }
-
     .front-text {
-      position: relative;
-      z-index: 1;
-      color: #fff6d6; /* readable foreground */
+      position: relative; z-index: 1; color: #fff6d6;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
     }
-
     @keyframes glow-pulse {
-      from {
-        text-shadow:
-          0 0 10px #ffd700,
-          0 0 20px #ffd700,
-          0 0 40px #ffdd55,
-          0 0 60px #ffaa00;
-      }
-      to {
-        text-shadow:
-          0 0 20px #fff6a0,
-          0 0 40px #ffd700,
-          0 0 60px #ffdd55,
-          0 0 80px #ffaa00;
-      }
+      from { text-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700, 0 0 40px #ffdd55, 0 0 60px #ffaa00; }
+      to   { text-shadow: 0 0 20px #fff6a0, 0 0 40px #ffd700, 0 0 60px #ffdd55, 0 0 80px #ffaa00; }
+    }
+
+    .content-box { background-color: rgba(0,0,0,0.6); border: 2px solid rgba(253, 224, 71, 0.5); }
+
+    .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #555; transition: .4s; border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px;
+      background-color: white; transition: .4s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #d4af37; }
+    input:checked + .slider:before { transform: translateX(26px); }
+
+    /* Yellow sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #ffd700;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid #ffd700;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px; height: 18px;
+      border-radius: 50%; background: #fff;
+      border: 2px solid #ffd700; cursor: pointer;
     }
   </style>
 </head>
 <body class="antialiased text-white">
 
-  <div class="overlay min-h-screen flex flex-col items-center justify-center p-4">
-    <!-- Game Title -->
+  <!-- MENU PAGE -->
+  <div id="menu-page" class="overlay min-h-screen flex flex-col items-center justify-center p-4">
     <div class="text-center mb-20 relative">
       <h1 class="font-gametitle font-bold">
-        <!-- Glow background -->
         <div class="glow-text">
           <span class="block text-9xl md:text-[10rem] mb-6">Liway</span>
-          <span class="block text-2xl md:text-3xl">Adventures</span>
+          <span class="block text-2xl md:text-3xl mt-2">Adventures</span>
         </div>
-        <!-- Foreground readable text -->
         <div class="front-text">
           <span class="block text-9xl md:text-[10rem] mb-6">Liway</span>
-          <span class="block text-2xl md:text-3xl">Adventures</span>
+          <span class="block text-2xl md:text-3xl mt-2">Adventures</span>
         </div>
       </h1>
     </div>
-
-    <!-- Menu Buttons -->
     <div class="flex flex-col space-y-8 w-full max-w-md">
-      <button class="btn-custom font-button" onclick="window.location.href='game.html'">
-        Start Game
-      </button>
-      <button class="btn-custom font-button" onclick="window.location.href='help.html'">
-        Tutorial
-      </button>
-      <button class="btn-custom font-button" onclick="window.location.href='settings.html'">
-        Settings
-      </button>
+      <button class="btn-custom font-button" onclick="showPage('game')">Start Game</button>
+      <button class="btn-custom font-button" onclick="showPage('help')">Tutorial</button>
+      <button class="btn-custom font-button" onclick="showPage('settings')">Settings</button>
     </div>
   </div>
+
+  <!-- HELP PAGE -->
+  <div id="help-page" class="overlay min-h-screen hidden flex flex-col items-center justify-center p-4 text-center">
+    <h1 class="font-gametitle text-7xl text-yellow-200 mb-8" style="text-shadow: 3px 3px 6px rgba(0,0,0,0.7);">Help</h1>
+    <div class="content-box rounded-lg p-8 w-full max-w-2xl text-lg mb-8">
+      <h2 class="font-button text-4xl text-yellow-300 mb-4">How to Play</h2>
+      <p class="mb-6">Welcome to Liway Adventures! Your goal is to navigate the mystical forests and defeat the mythical creatures that stand in your way. Use your courage and wits to survive.</p>
+      <h2 class="font-button text-4xl text-yellow-300 mb-4">Keybinds</h2>
+      <ul class="list-none space-y-2">
+        <li><span class="font-bold">W, A, S, D</span> - Move Character</li>
+        <li><span class="font-bold">Spacebar</span> - Jump</li>
+        <li><span class="font-bold">Esc</span> - Pause Game</li>
+      </ul>
+    </div>
+    <button class="btn-custom font-button" onclick="showPage('menu')">Back to Menu</button>
+  </div>
+
+<!-- SETTINGS PAGE -->
+<div id="settings-page" class="overlay min-h-screen hidden flex flex-col items-center justify-center p-4 text-center">
+  <h1 class="font-gametitle text-7xl text-yellow-200 mb-8" style="text-shadow: 3px 3px 6px rgba(0,0,0,0.7);">Settings</h1>
+  
+  <div class="content-box rounded-lg p-8 w-full max-w-xl text-lg mb-8 space-y-8">
+    
+    <!-- MUSIC CONTROL -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <label class="font-button text-3xl text-yellow-300">Music</label>
+        <label class="switch">
+          <input type="checkbox" id="music-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <input type="range" id="music-slider" min="0" max="1" step="0.01" value="1">
+    </div>
+
+    <!-- SFX CONTROL -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <label class="font-button text-3xl text-yellow-300">SFX</label>
+        <label class="switch">
+          <input type="checkbox" id="sfx-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <input type="range" id="sfx-slider" min="0" max="1" step="0.01" value="1">
+    </div>
+
+  </div>
+
+  <button class="btn-custom font-button" onclick="showPage('menu')">Back to Menu</button>
+</div>
+
+
+
+  <!-- Background Music -->
+  <audio id="bgm" src="assets/audio/bgm.mp3" loop></audio>
+
+  <script>
+    const pages = {
+      menu: document.getElementById("menu-page"),
+      help: document.getElementById("help-page"),
+      settings: document.getElementById("settings-page"),
+    };
+
+    function showPage(page) {
+      Object.values(pages).forEach(el => el.classList.add("hidden"));
+      if (page === "game") {
+        alert("Game would load here!");
+        page = "menu";
+      }
+      pages[page].classList.remove("hidden");
+    }
+
+const bgm = document.getElementById("bgm");
+const musicToggle = document.getElementById("music-toggle");
+const musicSlider = document.getElementById("music-slider");
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Restore mute state
+  const isMusicMuted = localStorage.getItem('liway_music_muted') === 'true';
+  const savedMusicVol = localStorage.getItem('liway_music_volume');
+
+  if (isMusicMuted) {
+    musicToggle.checked = false;
+    bgm.pause();
+  }
+
+  // Restore volume or set default to 1 (max)
+  if (savedMusicVol !== null) {
+    musicSlider.value = savedMusicVol;
+    bgm.volume = savedMusicVol;
+  } else {
+    musicSlider.value = 1;
+    bgm.volume = 1;
+  }
+
+  // Try autoplay
+  if (musicToggle.checked) {
+    bgm.play().catch(() => {
+      console.log("Autoplay blocked, waiting for user click.");
+      document.body.addEventListener('click', () => bgm.play(), { once: true });
+    });
+  }
+});
+
+// Toggle music on/off
+musicToggle.addEventListener("change", () => {
+  if (musicToggle.checked) {
+    bgm.play();
+    localStorage.setItem('liway_music_muted', 'false');
+  } else {
+    bgm.pause();
+    localStorage.setItem('liway_music_muted', 'true');
+  }
+});
+
+// Adjust volume live
+musicSlider.addEventListener("input", () => {
+  bgm.volume = musicSlider.value;
+  localStorage.setItem('liway_music_volume', musicSlider.value);
+});
+  </script>
 
 </body>
 </html>
