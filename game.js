@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load the background image
     const backgroundImage = new Image();
     // This image needs to be tiled
-    backgroundImage.src = '\assets\game_background_tiled.png'; 
+    backgroundImage.src = "assets/game_background_tiled.png"; 
 
     let backgroundY1 = 0;
     let backgroundY2 = -canvas.height; // Start the second image above the canvas
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backgroundImage.onload = () => {
         // Player (Inspired by a mythological bird like Sarimanok or a spirit)
         const playerImage = new Image();
-        playerImage.src = '/assets/player_bird.png'; // You'll need to create this image
+        playerImage.src = "assets/player_bird.png"; // You'll need to create this image
         let player = {
             x: canvas.width / 2 - 48, // Assuming player is 64x64
             y: canvas.height - 140,
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Bullets (e.g., enchanted arrows, fireballs from a diwata)
         let bullets = [];
         const bulletImage = new Image();
-        bulletImage.src = '/assets/bullet_fireball.png'; // You'll need to create this image
+        bulletImage.src = "assets/bullet_fireball.png"; // You'll need to create this image
 
         function shoot() {
             bullets.push({
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Enemies (e.g., Aswang, Kapre, Tikbalang, distorted spirits)
         let enemies = [];
         const enemyImage = new Image();
-        enemyImage.src = 'assets\enemy_aswang.png'; // You'll need to create this image
+        enemyImage.src = "assets/enemy_aswang.png"; 
 
         function spawnEnemy() {
             enemies.push({
