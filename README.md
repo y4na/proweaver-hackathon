@@ -15,15 +15,14 @@
 ## 📑 Table of Contents
 1. [Project Description](#project-description)  
 2. [Core Mechanics](#core-mechanics)  
-3. [Features](#features)  
+3. [About PromptQuest 2025](#about-promptquest-2025)  
 4. [Installation Guide](#installation-guide)  
 5. [Gameplay](#gameplay)  
-6. [Hackathon Journey](#hackathon-journey)  
-7. [Credits](#credits)  
+6. [Credits](#credits)  
 
 ---
 
-## 📝 Project Description
+## 📝 Project Description <a name="project-description"></a>
 Liway Adventures is inspired by **Galactic Pulse** and **Philippine Mythology**.  
 
 The player controls the legendary **Ibong Adarna**, navigating an infinite sky filled with descending enemies.  
@@ -38,7 +37,7 @@ The game was built from scratch using:
 
 ---
 
-## 🎮 Core Mechanics  
+## 🎮 Core Mechanics  <a name="core-mechanics"></a>
 
 ### Controls
 - **← / → Arrow Keys** → Move horizontally  
@@ -55,7 +54,7 @@ The game was built from scratch using:
 
 ---
 
-## 📢 About PromptQuest 2025  
+## 📢 About PromptQuest 2025  <a name="about-promptquest-2025"></a>
 
 **PromptQuest 2025** is a **university-wide online hackathon** organized by [Proweaver](https://www.proweaver.com/),  
 an IT company based in Cebu. Unlike traditional hackathons, it focuses on **AI prompting skills** —  
@@ -67,7 +66,7 @@ where students bring ideas to life using creativity and AI tools, even without c
 
 ---
 
-## ⚙️ Installation Guide
+## ⚙️ Installation Guide <a name="installation-guide"></a>
 Clone the repository:  
 ```bash
 git clone https://github.com/your-repo/liway-adventures.git
@@ -76,7 +75,7 @@ Open the project in your browser:
 ```bash
 open index.html
 ```
-## 🕹️ Gameplay
+## 🕹️ Gameplay <a name="gameplay"></a>
 <div align = "center">
 
 ### Controls  
@@ -99,7 +98,7 @@ open index.html
 
 </div>
 
-## 📜 Credits  
+## 📜 Credits  <a name="credits"></a>
 
 <div align="center">
 
